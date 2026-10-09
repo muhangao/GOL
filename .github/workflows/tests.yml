@@ -15,6 +15,7 @@ jobs:
         with:
           python-version: '3.11'
           cache: pip
+          cache-dependency-path: pyproject.toml
       - name: Install CPU dependencies
         run: |
           python -m pip install --upgrade pip
