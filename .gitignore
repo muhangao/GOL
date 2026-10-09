@@ -12,3 +12,4 @@ plots/
 *.sqlite*
 *.log
 .DS_Store
+logs/
