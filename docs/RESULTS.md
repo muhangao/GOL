@@ -1,6 +1,6 @@
 # Pilot result: FineWeb-Edu, 124M decoder, 3 seeds
 
-Run on 2026-10-08, git `d3c0ec8` on branch `codex/gol-warmup-reproduction`, `configs/pilot.json` unchanged.
+Run on 2026-10-08, git `a0f3b0a` on branch `codex/gol-warmup-reproduction`, `configs/pilot.json` unchanged.
 
 ## Setup actually executed
 
