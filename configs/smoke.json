@@ -1,0 +1,11 @@
+{
+  "model": {"layers": 2, "dim": 32, "heads": 4, "ffn_dim": 64, "seq_len": 64},
+  "train": {
+    "global_batch_size": 4, "micro_batch_size": 2,
+    "warmup_reference_steps": 3, "text_steps": 6,
+    "budget_match": "estimated_flops", "lr": 0.001,
+    "lr_warmup_steps": 1, "dtype": "float32",
+    "eval_every": 2, "eval_sequences": 8, "checkpoint_every": 2
+  },
+  "life": {"board_size": 4, "frames": 3, "boundary": "toroidal"}
+}
