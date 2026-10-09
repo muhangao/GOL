@@ -1,6 +1,7 @@
 """Two-stage loss experiments with paired initialization, DDP and resumable updates."""
 import argparse
 from contextlib import nullcontext
+from dataclasses import asdict
 import hashlib
 import json
 import os
@@ -14,7 +15,7 @@ import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 
-from .config import Config, flops_per_token, learning_rate, warmup_steps
+from .config import Config, flops_per_token, learning_rate, warmup_steps, phase_train_config
 from .data import TextCorpus
 from .life import VOCAB_SIZE, sample as life_sample
 from .model import build_model, transfer_body, fingerprint
@@ -91,10 +92,13 @@ def plan(config, arm, text_vocab):
     stages = []
     if arm != "scratch":
         vocab = VOCAB_SIZE if arm == "gol_reset" else text_vocab
+        source_cfg = phase_train_config(config, arm, "warmup")
         stages.append({"name": "warmup", "source": "gol" if arm == "gol_reset" else "warmup",
-                       "vocab": vocab, "steps": warmup_steps(config, text_vocab, vocab)})
+                       "vocab": vocab, "steps": warmup_steps(config, text_vocab, vocab, source_cfg.global_batch_size)})
     stages.append({"name": "text", "source": "train", "vocab": text_vocab,
                    "steps": config.train.text_steps})
+    for stage in stages:
+        stage["training"] = asdict(phase_train_config(config, arm, stage["name"]))
     return stages
 
 
@@ -128,26 +132,27 @@ def evaluate(model, corpus, cfg, runtime):
     return result
 
 
-def update(model, optimizer, corpus, stage, step, cfg, runtime, lr):
+def update(model, optimizer, corpus, stage, step, cfg, runtime, lr, train_cfg=None):
+    train_cfg = train_cfg or cfg.train
     model.train()
     optimizer.zero_grad(set_to_none=True)
-    micro = cfg.train.micro_batch_size
-    accumulation = cfg.train.global_batch_size // (micro * runtime.world)
-    data_seed = cfg.train.data_seed + (1 if stage["name"] == "warmup" else 2)
+    micro = train_cfg.micro_batch_size
+    accumulation = train_cfg.global_batch_size // (micro * runtime.world)
+    data_seed = train_cfg.data_seed + (1 if stage["name"] == "warmup" else 2)
     mean_loss = torch.zeros((), device=runtime.device)
     for group in optimizer.param_groups:
         group["lr"] = lr
     for k in range(accumulation):
-        first = ((step - 1) * cfg.train.global_batch_size
+        first = ((step - 1) * train_cfg.global_batch_size
                  + (k * runtime.world + runtime.rank) * micro)
         x, y = batch(corpus, stage["source"], range(first, first + micro), cfg, data_seed, runtime.device)
         sync = model.no_sync() if isinstance(model, DDP) and k + 1 < accumulation else nullcontext()
         with sync:
-            with autocast(cfg.train, runtime.device):
+            with autocast(train_cfg, runtime.device):
                 loss = model(x, y)
             (loss / accumulation).backward()
         mean_loss += loss.detach() / accumulation
-    torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.train.grad_clip, error_if_nonfinite=True)
+    torch.nn.utils.clip_grad_norm_(model.parameters(), train_cfg.grad_clip, error_if_nonfinite=True)
     optimizer.step()
     return (runtime.reduce(mean_loss) / runtime.world).item()
 
@@ -194,8 +199,10 @@ def run_experiment(config, data, out, arm, seed=0, device="auto", resume=False,
 def _run(cfg, data, out, arm, seed, rt, resume, stop_after, verify_data):
     if seed < 0 or (stop_after is not None and stop_after < 0):
         raise ValueError("seed and stop_after must be nonnegative")
-    if cfg.train.global_batch_size % (cfg.train.micro_batch_size * rt.world):
-        raise ValueError("global_batch_size must divide evenly by micro_batch_size * WORLD_SIZE")
+    for phase in (("text",) if arm == "scratch" else ("warmup", "text")):
+        phase_cfg = phase_train_config(cfg, arm, phase)
+        if phase_cfg.global_batch_size % (phase_cfg.micro_batch_size * rt.world):
+            raise ValueError(f"{phase}: global_batch_size must divide evenly by micro_batch_size * WORLD_SIZE")
     if cfg.train.dtype == "bfloat16" and (rt.device.type != "cuda" or not torch.cuda.is_bf16_supported()):
         raise ValueError("This BF16 configuration requires a BF16-capable CUDA GPU; use float32 for CPU")
     corpus = TextCorpus(data, verify=verify_data)
@@ -203,7 +210,6 @@ def _run(cfg, data, out, arm, seed, rt, resume, stop_after, verify_data):
         if len(values) <= cfg.model.seq_len:
             raise ValueError(f"{split} must contain at least seq_len + 1 tokens")
     stages = plan(cfg, arm, corpus.vocab_size)
-    tokens_per_update = cfg.train.global_batch_size * cfg.model.seq_len
     metadata = {"schema_version": 1, "arm": arm, "seed": seed, "config": cfg.to_dict(),
                 "manifest_sha256": corpus.fingerprint, "tokenizer": corpus.manifest["tokenizer"],
                 "world_size": rt.world, "device_type": rt.device.type, "torch": str(torch.__version__),
@@ -255,7 +261,7 @@ def _run(cfg, data, out, arm, seed, rt, resume, stop_after, verify_data):
                     "io_sha256": fingerprint(base, io=True),
                     "parameters": sum(p.numel() for p in base.parameters())})
     model = rt.wrap(base)
-    optimizer = optimizer_for(model, cfg.train, rt.device)
+    optimizer = optimizer_for(model, phase_train_config(cfg, arm, stage["name"]), rt.device)
     if checkpoint is not None:
         optimizer.load_state_dict(checkpoint["optimizer"])
     del checkpoint, base
@@ -275,7 +281,10 @@ def _run(cfg, data, out, arm, seed, rt, resume, stop_after, verify_data):
         val = None if stage_now["source"] == "gol" else evaluate(model, corpus, cfg, rt)
         if stage_now["name"] == "text":
             state["last_text_val_loss"] = val
-        row = {"phase": stage_now["name"], "phase_step": state["step"],
+        active_cfg = phase_train_config(cfg, arm, stage_now["name"])
+        row = {"phase": stage_now["name"],
+               "global_batch_size": active_cfg.global_batch_size,
+               "micro_batch_size": active_cfg.micro_batch_size, "phase_step": state["step"],
                "updates": state["updates"], "train_loss": train_loss, "text_val_loss": val,
                "learning_rate": lr, "warmup_tokens": state["warmup_tokens"],
                "text_tokens": state["text_tokens"],
@@ -289,6 +298,8 @@ def _run(cfg, data, out, arm, seed, rt, resume, stop_after, verify_data):
 
     while state["phase_index"] < len(stages):
         stage = stages[state["phase_index"]]
+        active_cfg = phase_train_config(cfg, arm, stage["name"])
+        tokens_per_update = active_cfg.global_batch_size * cfg.model.seq_len
         if not state["started"]:
             log()
             state["started"] = True
@@ -302,10 +313,10 @@ def _run(cfg, data, out, arm, seed, rt, resume, stop_after, verify_data):
                 lr_step, horizon = state["updates"] + 1, sum(s["steps"] for s in stages)
             else:
                 lr_step, horizon = step, stage["steps"]
-            lr = learning_rate(lr_step, horizon, cfg.train)
+            lr = learning_rate(lr_step, horizon, active_cfg)
             rt.synchronize()
             started = time.perf_counter()
-            loss = update(model, optimizer, corpus, stage, step, cfg, rt, lr)
+            loss = update(model, optimizer, corpus, stage, step, cfg, rt, lr, active_cfg)
             rt.synchronize()
             state["update_seconds"] += time.perf_counter() - started
             state["step"] = step
@@ -320,6 +331,8 @@ def _run(cfg, data, out, arm, seed, rt, resume, stop_after, verify_data):
             if step % cfg.train.checkpoint_every == 0 or finished or pause:
                 save()
             if pause:
+                if finished and stage["name"] == "warmup":
+                    save("warmup.pt")
                 return state
         if stage["name"] == "warmup":
             save("warmup.pt")
@@ -352,7 +365,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True, type=Path)
     parser.add_argument("--data", required=True, type=Path)
-    parser.add_argument("--out", required=True, type=Path)
+    parser.add_argument("--out", type=Path)
+    parser.add_argument("--plan-only", action="store_true", help="Print resolved stages/budgets without training or creating a run")
     parser.add_argument("--arm", choices=ARMS, required=True)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
@@ -360,7 +374,19 @@ def main():
     parser.add_argument("--stop-after", type=int, help="Pause after this absolute number of complete optimizer updates")
     parser.add_argument("--verify-data", action="store_true", help="Recompute the full prepared-token checksums")
     args = parser.parse_args()
-    run_experiment(Config.load(args.config), args.data, args.out, args.arm, args.seed,
+    config = Config.load(args.config)
+    if args.plan_only:
+        corpus = TextCorpus(args.data)
+        stages = plan(config, args.arm, corpus.vocab_size)
+        for stage in stages:
+            tokens = stage["steps"] * stage["training"]["global_batch_size"] * config.model.seq_len
+            stage["token_exposures"] = tokens
+            stage["training_flops_est"] = tokens * flops_per_token(config.model, stage["vocab"])
+        print(json.dumps(stages, indent=2))
+        return
+    if args.out is None:
+        parser.error("--out is required unless --plan-only is used")
+    run_experiment(config, args.data, args.out, args.arm, args.seed,
                    args.device, args.resume, args.stop_after, args.verify_data)
 
 

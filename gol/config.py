@@ -1,5 +1,5 @@
 """Explicit experiment configuration and approximate training-compute accounting."""
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 import json
 import math
 from pathlib import Path
@@ -59,6 +59,33 @@ class TrainConfig:
 
 
 @dataclass(frozen=True)
+class WarmupConfig:
+    """Optional source-stage overrides for BOTH reset arms, never text_continue.
+
+    Omitted fields inherit TrainConfig. The reference budget is always defined
+    using train.global_batch_size, so reducing source batch increases updates,
+    not the prescribed warmup token/FLOP budget.
+    """
+    global_batch_size: int | None = None
+    micro_batch_size: int | None = None
+    lr: float | None = None
+    min_lr_ratio: float | None = None
+    lr_warmup_steps: int | None = None
+    weight_decay: float | None = None
+    grad_clip: float | None = None
+
+    def resolve(self, train: TrainConfig) -> TrainConfig:
+        overrides = {k: v for k, v in asdict(self).items() if v is not None}
+        for key in ("global_batch_size", "micro_batch_size", "lr_warmup_steps"):
+            if key in overrides and (isinstance(overrides[key], bool) or not isinstance(overrides[key], int)):
+                raise ValueError(f"warmup.{key} must be an integer")
+        for key, value in overrides.items():
+            if not math.isfinite(value):
+                raise ValueError(f"warmup.{key} must be finite")
+        return replace(train, **overrides)
+
+
+@dataclass(frozen=True)
 class LifeConfig:
     board_size: int = 12
     frames: int = 6
@@ -80,22 +107,30 @@ class Config:
     model: ModelConfig = field(default_factory=ModelConfig)
     train: TrainConfig = field(default_factory=TrainConfig)
     life: LifeConfig = field(default_factory=LifeConfig)
+    warmup: WarmupConfig | None = None
 
     def __post_init__(self):
         if self.model.seq_len < 2 * (self.life.board_size ** 2 + 1):
             raise ValueError("seq_len must expose at least two complete GoL frames")
 
+        if self.warmup is not None:
+            self.warmup.resolve(self.train)  # Validate before any training starts.
+
     def to_dict(self):
-        return asdict(self)
+        result = asdict(self)
+        if self.warmup is None:
+            result.pop("warmup")  # Keep legacy config dictionaries unchanged.
+        return result
 
     @classmethod
     def from_dict(cls, obj):
-        unknown = set(obj) - {"model", "train", "life"}
+        unknown = set(obj) - {"model", "train", "life", "warmup"}
         if unknown:
             raise ValueError(f"Unknown configuration keys: {sorted(unknown)}")
         return cls(ModelConfig(**obj.get("model", {})),
                    TrainConfig(**obj.get("train", {})),
-                   LifeConfig(**obj.get("life", {})))
+                   LifeConfig(**obj.get("life", {})),
+                   None if obj.get("warmup") is None else WarmupConfig(**obj["warmup"]))
 
     @classmethod
     def load(cls, path):
@@ -115,12 +150,24 @@ def flops_per_token(model: ModelConfig, vocab_size: int) -> int:
     return 6 * linear + 12 * model.layers * model.seq_len * d
 
 
-def warmup_steps(config: Config, text_vocab: int, source_vocab: int) -> int:
-    steps = config.train.warmup_reference_steps
-    if config.train.budget_match == "tokens":
-        return steps
-    target = steps * flops_per_token(config.model, text_vocab)
-    cost = flops_per_token(config.model, source_vocab)
+def phase_train_config(config: Config, arm: str, phase: str) -> TrainConfig:
+    if phase == "warmup" and arm != "text_continue" and config.warmup is not None:
+        return config.warmup.resolve(config.train)
+    return config.train
+
+
+def warmup_steps(config: Config, text_vocab: int, source_vocab: int,
+                 source_batch_size: int | None = None) -> int:
+    """Ceiling-match the original reference budget, not the source step count."""
+    if source_batch_size is None:
+        source_batch_size = phase_train_config(config, "gol_reset", "warmup").global_batch_size
+    if source_batch_size <= 0:
+        raise ValueError("source_batch_size must be positive")
+    target = config.train.warmup_reference_steps * config.train.global_batch_size
+    cost = source_batch_size
+    if config.train.budget_match == "estimated_flops":
+        target *= flops_per_token(config.model, text_vocab)
+        cost *= flops_per_token(config.model, source_vocab)
     return (target + cost - 1) // cost
 
 
