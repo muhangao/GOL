@@ -57,3 +57,59 @@ estimated training FLOPs (about 5.9% of total FLOPs); these are different denomi
 This is not an exact NCA-paper reproduction. Different source rules, patch encodings, optimization settings or
 handoffs require separate experiments and may or may not help. Validation loss was used for monitoring only;
 nothing was selected on it. New diagnostics and configuration options do not invalidate or replace this negative result.
+
+## Follow-up (2026-10-09): source audit, warmup screens, and a transfer re-test
+
+Executed per [SOURCE_AUDIT.md](SOURCE_AUDIT.md) on single H200s. Audit: 4,096 fit + 4,096 held-out source
+sequences, audit seed 99173, identical held-out indices for every checkpoint. Raw outputs are in
+`results/source_audit/{orig_pilot,warmup_lr1e4,warmup_batch16}/`.
+The screens and transfer runs used git `5ce7175`. Run directories are
+`runs/screen_warmup_{lr1e4,batch16}` under the project path above.
+
+### Held-out source loss (nats/token)
+
+| Predictor | Source updates | all | initial cells | evolved cells | evolved alive | evolved dead |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `same_cell_left_up` (best cheap baseline) | — | 0.542 | 0.671 | 0.498 | 1.156 | 0.271 |
+| `known_rule_reference` (not a floor) | — | 0.189 | 0.674 | 0.000 | 0.000 | 0.000 |
+| original pilot, seed 0 / 1 / 2 | 176 | 0.520 / 0.349 / 0.311 | 0.658 / 0.674 / 0.670 | 0.472 / 0.224 / 0.172 | 1.068 / 0.434 / 0.331 | 0.266 / 0.151 / 0.117 |
+| `pilot_warmup_lr1e4`, seed 0 / 1 / 2 | 176 | 0.412 / 0.382 / 0.339 | 0.662 / 0.665 / 0.663 | 0.318 / 0.274 / 0.214 | 0.647 / 0.549 / 0.455 | 0.204 / 0.178 / 0.131 |
+| `pilot_warmup_batch16`, seed 0 / 1 / 2 | 1,405 | 0.184 / 0.184 / 0.184 | 0.654 / 0.654 / 0.653 | 0.0001 / 0.0000 / 0.0000 | 0.0001 / 0.0001 / 0.0000 | 0.0000 / 0.0000 / 0.0000 |
+
+- The original 176-update source stage was **under-trained and seed-unstable**. Seed 0 barely beats the cheapest
+  local-statistics baseline on evolved cells (0.472 vs 0.498); seeds 1-2 are clearly better but far from the
+  deterministic-rule value of 0. Downstream text loss did not track this (3.940 / 3.946 / 3.906).
+- Lower warmup LR (1e-4) is more consistent across seeds but still far from the rule.
+- Source batch 16 (same token and estimated-FLOP budget, 8x the updates) drives held-out evolved-cell loss to
+  ~1e-4 on every seed. Total loss is slightly below the fixed-density known-rule reference because the model also
+  adapts its initial-cell prediction to the sampled board (0.653 vs 0.674). These checkpoints predict held-out
+  B3/S23 transitions essentially perfectly; this does not identify *how* they compute them.
+
+### Transfer with the batch-16 source stage
+
+`gol_reset` resumed from the screened `warmup.pt` checkpoints; `text_reset` used the same warmup override
+(1,024 text-warmup updates at batch 16, same reference budget). The downstream stage is unchanged. `scratch` and
+`text_continue` are unaffected by the override, so the original pilot runs serve as their references (same corpus,
+text batches, validation windows and model seeds; code differs only by the PR's warmup-override changes, which
+the AUDIT_VALIDATION regression showed to be bitwise-neutral without an override).
+
+| Text step | scratch (pilot) | text_continue (pilot) | text_reset (pilot) | gol_reset (pilot) | text_reset (b16) | **gol_reset (b16)** |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0 | 10.963 ± 0.012 | 6.162 ± 0.047 | 10.959 ± 0.016 | 10.930 ± 0.012 | 11.005 ± 0.044 | 10.958 ± 0.021 |
+| 256 | 5.378 ± 0.053 | 4.907 ± 0.035 | 5.397 ± 0.051 | 5.801 ± 0.104 | 5.104 ± 0.008 | 5.719 ± 0.090 |
+| 1024 | 3.998 ± 0.010 | 3.931 ± 0.009 | 4.027 ± 0.007 | 4.295 ± 0.042 | 3.974 ± 0.011 | 4.377 ± 0.071 |
+| **2048** | **3.711 ± 0.003** | **3.689 ± 0.007** | **3.734 ± 0.004** | **3.931 ± 0.021** | **3.717 ± 0.009** | **4.011 ± 0.051** |
+
+Per-seed finals (b16): `gol_reset` 4.021 / 4.057 / 3.956; `text_reset` 3.726 / 3.716 / 3.708.
+CSV and figures: `results/warmup_batch16_transfer/`.
+
+- **Learning the rule did not rescue transfer; it made it worse.** With a source stage that predicts held-out GoL
+  transitions essentially perfectly, `gol_reset` ends 0.29 nats behind the matched `text_reset` and 0.08 nats
+  behind the under-trained original GoL body. Every GoL seed is worse than every text or scratch seed.
+- The same warmup change helped the text control (3.734 to 3.717), so it is not a generically harmful optimizer
+  setting.
+- With two GoL source settings, better source prediction coincided with worse downstream text loss. This is two
+  settings and three seeds each, not a dose-response measurement, and it does not identify the mechanism
+  (e.g. body specialization, weight-norm growth, or I/O incompatibility).
+- Not tested: lr1e4 transfer, interface-adaptation (e.g. training new text I/O with a frozen body first),
+  partial body transfer, NCA/random-rule sources.
