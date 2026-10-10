@@ -1,0 +1,43 @@
+name: Pinned NCA replay smoke
+on:
+  pull_request:
+    paths: ['repro/nca/**', 'repro/__init__.py', 'tests/test_nca_replay.py', '.github/workflows/nca-replay.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cpu-upstream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      JAX_PLATFORMS: cpu
+      JAX_ENABLE_X64: 'false'
+      OMP_NUM_THREADS: '1'
+      WANDB_MODE: disabled
+      XLA_PYTHON_CLIENT_PREALLOCATE: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: repro/nca/requirements.txt
+      - name: Install pinned upstream dependencies
+        run: |
+          python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -r repro/nca/requirements.txt pytest
+      - name: Lock, budget and safety tests
+        run: python -m pytest tests/test_nca_replay.py -q
+      - name: Fetch and verify exact upstream source
+        run: python -m repro.nca.bootstrap --out "$RUNNER_TEMP/nca-upstream"
+      - name: Execute actual upstream source and OWT drivers on CPU
+        run: |
+          python -m repro.nca.integration_smoke --upstream "$RUNNER_TEMP/nca-upstream" --out "$RUNNER_TEMP/nca-smoke"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nca-smoke-provenance
+          path: |
+            ${{ runner.temp }}/nca-smoke/*/*.json
+            ${{ runner.temp }}/nca-smoke/*/*.jsonl
+          if-no-files-found: ignore

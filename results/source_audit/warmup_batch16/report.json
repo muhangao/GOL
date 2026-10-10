@@ -1,0 +1,725 @@
+{
+  "schema_version": 1,
+  "units": "nats per prediction target",
+  "seed": 99173,
+  "fit_index_range": [
+    0,
+    4096
+  ],
+  "eval_index_range": [
+    4096,
+    8192
+  ],
+  "ranges_are": "half-open, same seed, disjoint fit/eval indices",
+  "life": {
+    "board_size": 12,
+    "frames": 6,
+    "density_min": 0.2,
+    "density_max": 0.6,
+    "boundary": "toroidal"
+  },
+  "seq_len": 1024,
+  "smoothing_alpha": 0.5,
+  "targets_per_sequence": {
+    "initial_cells": 288,
+    "evolved_cells": 727,
+    "delimiters": 9
+  },
+  "runtime": {
+    "python": "3.12.3",
+    "torch": "2.13.0+cu130",
+    "numpy": "2.5.3",
+    "device": "cuda",
+    "dtype": "bfloat16",
+    "batch_size": 8
+  },
+  "audit_source_sha256": "2fe001e00038caf1bf7aaa2cbc4665029c45b80df511b8d85011649b72e5c74d",
+  "generator_source_sha256": "f722d65846e95823ff996f4edb952dd4c1443ff6a6ef3b31ccb3bd2fc3601495",
+  "model_source_sha256": "f4951f111feef832440e0d1673cfaf1f351cfc6a8370b80b516d9955f3e09fd5",
+  "records": [
+    {
+      "kind": "baseline",
+      "name": "unigram",
+      "groups": {
+        "all": {
+          "nll_sum": 2768044.568749736,
+          "tokens": 4194304,
+          "loss": 0.6599532529711094
+        },
+        "initial_cells": {
+          "nll_sum": 832912.3787067822,
+          "tokens": 1179648,
+          "loss": 0.7060685719017726
+        },
+        "evolved_cells": {
+          "nll_sum": 1735405.0271570133,
+          "tokens": 2977792,
+          "loss": 0.5827824868751791
+        },
+        "delimiters": {
+          "nll_sum": 199727.16288594506,
+          "tokens": 36864,
+          "loss": 5.417946041827936
+        },
+        "evolved_alive": {
+          "nll_sum": 929085.5589530494,
+          "tokens": 764242,
+          "loss": 1.2156954982231405
+        },
+        "evolved_dead": {
+          "nll_sum": 806319.4682039642,
+          "tokens": 2213550,
+          "loss": 0.3642653060486387
+        },
+        "frame_0_cells": {
+          "nll_sum": 832912.3787067822,
+          "tokens": 1179648,
+          "loss": 0.7060685719017726
+        },
+        "frame_1_cells": {
+          "nll_sum": 380321.6384002232,
+          "tokens": 618496,
+          "loss": 0.6149136589407582
+        },
+        "frame_2_cells": {
+          "nll_sum": 345202.12514578755,
+          "tokens": 589824,
+          "loss": 0.5852629346140332
+        },
+        "frame_3_cells": {
+          "nll_sum": 342303.8567716257,
+          "tokens": 589824,
+          "loss": 0.5803491495287165
+        },
+        "frame_4_cells": {
+          "nll_sum": 335690.79846900626,
+          "tokens": 589824,
+          "loss": 0.5691372315623071
+        },
+        "frame_5_cells": {
+          "nll_sum": 331886.60837037046,
+          "tokens": 589824,
+          "loss": 0.56268752775467
+        }
+      }
+    },
+    {
+      "kind": "baseline",
+      "name": "position_only",
+      "groups": {
+        "all": {
+          "nll_sum": 2489105.5814885967,
+          "tokens": 4194304,
+          "loss": 0.5934490159722797
+        },
+        "initial_cells": {
+          "nll_sum": 795187.0072562303,
+          "tokens": 1179648,
+          "loss": 0.6740883782757486
+        },
+        "evolved_cells": {
+          "nll_sum": 1693900.5808213954,
+          "tokens": 2977792,
+          "loss": 0.5688444931081135
+        },
+        "delimiters": {
+          "nll_sum": 17.99341097346607,
+          "tokens": 36864,
+          "loss": 0.00048810251121598493
+        },
+        "evolved_alive": {
+          "nll_sum": 1028371.6122092422,
+          "tokens": 764242,
+          "loss": 1.3456099144109355
+        },
+        "evolved_dead": {
+          "nll_sum": 665528.9686121532,
+          "tokens": 2213550,
+          "loss": 0.3006613668596387
+        },
+        "frame_0_cells": {
+          "nll_sum": 795187.0072562303,
+          "tokens": 1179648,
+          "loss": 0.6740883782757486
+        },
+        "frame_1_cells": {
+          "nll_sum": 375164.1594140727,
+          "tokens": 618496,
+          "loss": 0.606574916271201
+        },
+        "frame_2_cells": {
+          "nll_sum": 338026.49816494074,
+          "tokens": 589824,
+          "loss": 0.5730972258927083
+        },
+        "frame_3_cells": {
+          "nll_sum": 334419.2801520836,
+          "tokens": 589824,
+          "loss": 0.5669814726970819
+        },
+        "frame_4_cells": {
+          "nll_sum": 325750.97553491965,
+          "tokens": 589824,
+          "loss": 0.5522850469545486
+        },
+        "frame_5_cells": {
+          "nll_sum": 320539.6675553797,
+          "tokens": 589824,
+          "loss": 0.5434496859323793
+        }
+      }
+    },
+    {
+      "kind": "baseline",
+      "name": "previous_same_cell",
+      "groups": {
+        "all": {
+          "nll_sum": 2354455.8990030307,
+          "tokens": 4194304,
+          "loss": 0.5613460299975945
+        },
+        "initial_cells": {
+          "nll_sum": 794621.099905681,
+          "tokens": 1179648,
+          "loss": 0.6736086526706958
+        },
+        "evolved_cells": {
+          "nll_sum": 1559828.8006661998,
+          "tokens": 2977792,
+          "loss": 0.5238206028715907
+        },
+        "delimiters": {
+          "nll_sum": 5.998431146468526,
+          "tokens": 36864,
+          "loss": 0.0001627178587909214
+        },
+        "evolved_alive": {
+          "nll_sum": 935659.8777011274,
+          "tokens": 764242,
+          "loss": 1.224297902629177
+        },
+        "evolved_dead": {
+          "nll_sum": 624168.922965074,
+          "tokens": 2213550,
+          "loss": 0.28197642834590314
+        },
+        "frame_0_cells": {
+          "nll_sum": 794621.099905681,
+          "tokens": 1179648,
+          "loss": 0.6736086526706958
+        },
+        "frame_1_cells": {
+          "nll_sum": 372639.0728029838,
+          "tokens": 618496,
+          "loss": 0.6024922922751057
+        },
+        "frame_2_cells": {
+          "nll_sum": 312753.8305315973,
+          "tokens": 589824,
+          "loss": 0.5302494142856129
+        },
+        "frame_3_cells": {
+          "nll_sum": 300585.64919013804,
+          "tokens": 589824,
+          "loss": 0.5096192240229933
+        },
+        "frame_4_cells": {
+          "nll_sum": 290693.0203039879,
+          "tokens": 589824,
+          "loss": 0.492847053195509
+        },
+        "frame_5_cells": {
+          "nll_sum": 283157.2278374947,
+          "tokens": 589824,
+          "loss": 0.48007071234384274
+        }
+      }
+    },
+    {
+      "kind": "baseline",
+      "name": "same_cell_left_up",
+      "groups": {
+        "all": {
+          "nll_sum": 2274298.153004921,
+          "tokens": 4194304,
+          "loss": 0.5422349340927413
+        },
+        "initial_cells": {
+          "nll_sum": 791503.8293128747,
+          "tokens": 1179648,
+          "loss": 0.6709661096470089
+        },
+        "evolved_cells": {
+          "nll_sum": 1482788.3252609002,
+          "tokens": 2977792,
+          "loss": 0.4979489249957352
+        },
+        "delimiters": {
+          "nll_sum": 5.998431146468526,
+          "tokens": 36864,
+          "loss": 0.0001627178587909214
+        },
+        "evolved_alive": {
+          "nll_sum": 883101.3994950751,
+          "tokens": 764242,
+          "loss": 1.1555258668001434
+        },
+        "evolved_dead": {
+          "nll_sum": 599686.9257658246,
+          "tokens": 2213550,
+          "loss": 0.270916367719647
+        },
+        "frame_0_cells": {
+          "nll_sum": 791503.8293128747,
+          "tokens": 1179648,
+          "loss": 0.6709661096470089
+        },
+        "frame_1_cells": {
+          "nll_sum": 352042.48861070635,
+          "tokens": 618496,
+          "loss": 0.5691912132183657
+        },
+        "frame_2_cells": {
+          "nll_sum": 301139.8156735086,
+          "tokens": 589824,
+          "loss": 0.5105587695202444
+        },
+        "frame_3_cells": {
+          "nll_sum": 285376.0540376719,
+          "tokens": 589824,
+          "loss": 0.48383255689438187
+        },
+        "frame_4_cells": {
+          "nll_sum": 276631.1198417215,
+          "tokens": 589824,
+          "loss": 0.46900621175422075
+        },
+        "frame_5_cells": {
+          "nll_sum": 267598.8470972904,
+          "tokens": 589824,
+          "loss": 0.4536927068028605
+        }
+      }
+    },
+    {
+      "kind": "reference",
+      "name": "known_rule_reference",
+      "groups": {
+        "all": {
+          "nll_sum": 794608.5093455459,
+          "tokens": 4194304,
+          "loss": 0.1894494317401757
+        },
+        "initial_cells": {
+          "nll_sum": 794608.509345546,
+          "tokens": 1179648,
+          "loss": 0.6735979795206248
+        },
+        "evolved_cells": {
+          "nll_sum": 0.0,
+          "tokens": 2977792,
+          "loss": 0.0
+        },
+        "delimiters": {
+          "nll_sum": 0.0,
+          "tokens": 36864,
+          "loss": 0.0
+        },
+        "evolved_alive": {
+          "nll_sum": 0.0,
+          "tokens": 764242,
+          "loss": 0.0
+        },
+        "evolved_dead": {
+          "nll_sum": 0.0,
+          "tokens": 2213550,
+          "loss": 0.0
+        },
+        "frame_0_cells": {
+          "nll_sum": 794608.509345546,
+          "tokens": 1179648,
+          "loss": 0.6735979795206248
+        },
+        "frame_1_cells": {
+          "nll_sum": 0.0,
+          "tokens": 618496,
+          "loss": 0.0
+        },
+        "frame_2_cells": {
+          "nll_sum": 0.0,
+          "tokens": 589824,
+          "loss": 0.0
+        },
+        "frame_3_cells": {
+          "nll_sum": 0.0,
+          "tokens": 589824,
+          "loss": 0.0
+        },
+        "frame_4_cells": {
+          "nll_sum": 0.0,
+          "tokens": 589824,
+          "loss": 0.0
+        },
+        "frame_5_cells": {
+          "nll_sum": 0.0,
+          "tokens": 589824,
+          "loss": 0.0
+        }
+      }
+    },
+    {
+      "kind": "checkpoint",
+      "name": "gol_reset_seed0/warmup.pt",
+      "path": "/scratch/project/prj-02-tg-llms-and-vlms/muhan/gol/runs/screen_warmup_batch16/gol_reset_seed0/warmup.pt",
+      "sha256": "13905d912546c0fe91985351f0d1dbba000816debea6eba79b03d075c64a9822",
+      "seed": 0,
+      "source_updates": 1405,
+      "training_git_revision": "5ce71757512af35260d1ba8daa596ec98a3f75c2",
+      "training_code_sha256": "27a3b7dc007f821bc19ff4dc7fd7416ead0f054e248ca2cc7b336527135c0fec",
+      "training_config": {
+        "model": {
+          "layers": 12,
+          "dim": 768,
+          "heads": 12,
+          "ffn_dim": 2048,
+          "seq_len": 1024,
+          "rope_theta": 10000.0,
+          "tied_embeddings": true
+        },
+        "train": {
+          "global_batch_size": 128,
+          "micro_batch_size": 4,
+          "text_steps": 2048,
+          "warmup_reference_steps": 128,
+          "budget_match": "estimated_flops",
+          "lr": 0.0006,
+          "min_lr_ratio": 0.1,
+          "lr_warmup_steps": 20,
+          "weight_decay": 0.1,
+          "grad_clip": 1.0,
+          "dtype": "bfloat16",
+          "eval_every": 64,
+          "eval_sequences": 128,
+          "checkpoint_every": 128,
+          "data_seed": 1729
+        },
+        "life": {
+          "board_size": 12,
+          "frames": 6,
+          "density_min": 0.2,
+          "density_max": 0.6,
+          "boundary": "toroidal"
+        },
+        "warmup": {
+          "global_batch_size": 16,
+          "micro_batch_size": 4,
+          "lr": null,
+          "min_lr_ratio": null,
+          "lr_warmup_steps": null,
+          "weight_decay": null,
+          "grad_clip": null
+        }
+      },
+      "groups": {
+        "all": {
+          "nll_sum": 771006.1571031057,
+          "tokens": 4194304,
+          "loss": 0.18382219245507853
+        },
+        "initial_cells": {
+          "nll_sum": 770855.5110429227,
+          "tokens": 1179648,
+          "loss": 0.6534623133705332
+        },
+        "evolved_cells": {
+          "nll_sum": 150.16253776972167,
+          "tokens": 2977792,
+          "loss": 5.042747706009072e-05
+        },
+        "delimiters": {
+          "nll_sum": 0.48352241309748223,
+          "tokens": 36864,
+          "loss": 1.3116384903903056e-05
+        },
+        "evolved_alive": {
+          "nll_sum": 86.44002605791229,
+          "tokens": 764242,
+          "loss": 0.00011310556873073226
+        },
+        "evolved_dead": {
+          "nll_sum": 63.722511711809375,
+          "tokens": 2213550,
+          "loss": 2.878747338519996e-05
+        },
+        "frame_0_cells": {
+          "nll_sum": 770855.5110429227,
+          "tokens": 1179648,
+          "loss": 0.6534623133705332
+        },
+        "frame_1_cells": {
+          "nll_sum": 50.80723379924075,
+          "tokens": 618496,
+          "loss": 8.214642261104477e-05
+        },
+        "frame_2_cells": {
+          "nll_sum": 20.454221995609714,
+          "tokens": 589824,
+          "loss": 3.467851765206182e-05
+        },
+        "frame_3_cells": {
+          "nll_sum": 9.162661706649487,
+          "tokens": 589824,
+          "loss": 1.5534569136978977e-05
+        },
+        "frame_4_cells": {
+          "nll_sum": 17.80222503468667,
+          "tokens": 589824,
+          "loss": 3.0182266294160073e-05
+        },
+        "frame_5_cells": {
+          "nll_sum": 51.936195233535045,
+          "tokens": 589824,
+          "loss": 8.805371641970324e-05
+        }
+      }
+    },
+    {
+      "kind": "checkpoint",
+      "name": "gol_reset_seed1/warmup.pt",
+      "path": "/scratch/project/prj-02-tg-llms-and-vlms/muhan/gol/runs/screen_warmup_batch16/gol_reset_seed1/warmup.pt",
+      "sha256": "39feeb548ac64ea2b2f060fef33e1c46ea227315ecebf271ac3a180ff131ec68",
+      "seed": 1,
+      "source_updates": 1405,
+      "training_git_revision": "5ce71757512af35260d1ba8daa596ec98a3f75c2",
+      "training_code_sha256": "27a3b7dc007f821bc19ff4dc7fd7416ead0f054e248ca2cc7b336527135c0fec",
+      "training_config": {
+        "model": {
+          "layers": 12,
+          "dim": 768,
+          "heads": 12,
+          "ffn_dim": 2048,
+          "seq_len": 1024,
+          "rope_theta": 10000.0,
+          "tied_embeddings": true
+        },
+        "train": {
+          "global_batch_size": 128,
+          "micro_batch_size": 4,
+          "text_steps": 2048,
+          "warmup_reference_steps": 128,
+          "budget_match": "estimated_flops",
+          "lr": 0.0006,
+          "min_lr_ratio": 0.1,
+          "lr_warmup_steps": 20,
+          "weight_decay": 0.1,
+          "grad_clip": 1.0,
+          "dtype": "bfloat16",
+          "eval_every": 64,
+          "eval_sequences": 128,
+          "checkpoint_every": 128,
+          "data_seed": 1729
+        },
+        "life": {
+          "board_size": 12,
+          "frames": 6,
+          "density_min": 0.2,
+          "density_max": 0.6,
+          "boundary": "toroidal"
+        },
+        "warmup": {
+          "global_batch_size": 16,
+          "micro_batch_size": 4,
+          "lr": null,
+          "min_lr_ratio": null,
+          "lr_warmup_steps": null,
+          "weight_decay": null,
+          "grad_clip": null
+        }
+      },
+      "groups": {
+        "all": {
+          "nll_sum": 771033.6757619379,
+          "tokens": 4194304,
+          "loss": 0.18382875341461608
+        },
+        "initial_cells": {
+          "nll_sum": 770886.3429217935,
+          "tokens": 1179648,
+          "loss": 0.6534884498780937
+        },
+        "evolved_cells": {
+          "nll_sum": 147.20026564086288,
+          "tokens": 2977792,
+          "loss": 4.943268893222323e-05
+        },
+        "delimiters": {
+          "nll_sum": 0.1325745038010666,
+          "tokens": 36864,
+          "loss": 3.5963135796730308e-06
+        },
+        "evolved_alive": {
+          "nll_sum": 58.955821379839335,
+          "tokens": 764242,
+          "loss": 7.714287016395244e-05
+        },
+        "evolved_dead": {
+          "nll_sum": 88.24444426102355,
+          "tokens": 2213550,
+          "loss": 3.986557532516706e-05
+        },
+        "frame_0_cells": {
+          "nll_sum": 770886.3429217935,
+          "tokens": 1179648,
+          "loss": 0.6534884498780937
+        },
+        "frame_1_cells": {
+          "nll_sum": 34.70572405977077,
+          "tokens": 618496,
+          "loss": 5.611309379490049e-05
+        },
+        "frame_2_cells": {
+          "nll_sum": 33.94936424058744,
+          "tokens": 589824,
+          "loss": 5.755846530590048e-05
+        },
+        "frame_3_cells": {
+          "nll_sum": 14.921569232156116,
+          "tokens": 589824,
+          "loss": 2.5298341932773363e-05
+        },
+        "frame_4_cells": {
+          "nll_sum": 26.945382622232387,
+          "tokens": 589824,
+          "loss": 4.5683767737888565e-05
+        },
+        "frame_5_cells": {
+          "nll_sum": 36.67822548611616,
+          "tokens": 589824,
+          "loss": 6.218503398660645e-05
+        }
+      }
+    },
+    {
+      "kind": "checkpoint",
+      "name": "gol_reset_seed2/warmup.pt",
+      "path": "/scratch/project/prj-02-tg-llms-and-vlms/muhan/gol/runs/screen_warmup_batch16/gol_reset_seed2/warmup.pt",
+      "sha256": "458e6561e8597e3227b48179d575924ad51be6c2d92f18e9cfb2d59c2e8e2976",
+      "seed": 2,
+      "source_updates": 1405,
+      "training_git_revision": "5ce71757512af35260d1ba8daa596ec98a3f75c2",
+      "training_code_sha256": "27a3b7dc007f821bc19ff4dc7fd7416ead0f054e248ca2cc7b336527135c0fec",
+      "training_config": {
+        "model": {
+          "layers": 12,
+          "dim": 768,
+          "heads": 12,
+          "ffn_dim": 2048,
+          "seq_len": 1024,
+          "rope_theta": 10000.0,
+          "tied_embeddings": true
+        },
+        "train": {
+          "global_batch_size": 128,
+          "micro_batch_size": 4,
+          "text_steps": 2048,
+          "warmup_reference_steps": 128,
+          "budget_match": "estimated_flops",
+          "lr": 0.0006,
+          "min_lr_ratio": 0.1,
+          "lr_warmup_steps": 20,
+          "weight_decay": 0.1,
+          "grad_clip": 1.0,
+          "dtype": "bfloat16",
+          "eval_every": 64,
+          "eval_sequences": 128,
+          "checkpoint_every": 128,
+          "data_seed": 1729
+        },
+        "life": {
+          "board_size": 12,
+          "frames": 6,
+          "density_min": 0.2,
+          "density_max": 0.6,
+          "boundary": "toroidal"
+        },
+        "warmup": {
+          "global_batch_size": 16,
+          "micro_batch_size": 4,
+          "lr": null,
+          "min_lr_ratio": null,
+          "lr_warmup_steps": null,
+          "weight_decay": null,
+          "grad_clip": null
+        }
+      },
+      "groups": {
+        "all": {
+          "nll_sum": 770644.9543861977,
+          "tokens": 4194304,
+          "loss": 0.1837360750165457
+        },
+        "initial_cells": {
+          "nll_sum": 770605.5474686027,
+          "tokens": 1179648,
+          "loss": 0.6532504166230966
+        },
+        "evolved_cells": {
+          "nll_sum": 39.186584168386844,
+          "tokens": 2977792,
+          "loss": 1.3159610936017977e-05
+        },
+        "delimiters": {
+          "nll_sum": 0.2203334256354168,
+          "tokens": 36864,
+          "loss": 5.976926693669075e-06
+        },
+        "evolved_alive": {
+          "nll_sum": 16.309728295101422,
+          "tokens": 764242,
+          "loss": 2.1341052042548593e-05
+        },
+        "evolved_dead": {
+          "nll_sum": 22.87685587328542,
+          "tokens": 2213550,
+          "loss": 1.0334917157184351e-05
+        },
+        "frame_0_cells": {
+          "nll_sum": 770605.5474686027,
+          "tokens": 1179648,
+          "loss": 0.6532504166230966
+        },
+        "frame_1_cells": {
+          "nll_sum": 13.328649796331092,
+          "tokens": 618496,
+          "loss": 2.1550098620413216e-05
+        },
+        "frame_2_cells": {
+          "nll_sum": 11.324689912616236,
+          "tokens": 589824,
+          "loss": 1.920011717498141e-05
+        },
+        "frame_3_cells": {
+          "nll_sum": 5.728404120187406,
+          "tokens": 589824,
+          "loss": 9.712056681632837e-06
+        },
+        "frame_4_cells": {
+          "nll_sum": 4.669524932748914,
+          "tokens": 589824,
+          "loss": 7.916810663433353e-06
+        },
+        "frame_5_cells": {
+          "nll_sum": 4.135315406503196,
+          "tokens": 589824,
+          "loss": 7.011100610526523e-06
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Teacher-forced loss does not by itself establish rule learning or language transfer.",
+    "Known-rule reference uses a fixed mean-density initial predictor; it is not Bayes optimal.",
+    "Old warmup training loss is not a matched held-out baseline.",
+    "This operation does not train, resume, or modify any checkpoint."
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/danihyunlee/nca-pre-pretraining.git",
+  "commit": "bdd1c71e04eb2e5a2c91481faf278e95846b4431",
+  "tree": "88e7e8016bd9209346fc4e264f81755ab0581221",
+  "paper": "https://arxiv.org/abs/2603.10055v1",
+  "files": {
+    "LICENSE": "690e48c976bb5abb29996e0530c7f70d89fb44b6",
+    "README.md": "66b40ebeac87844a80a579e90e24ed54a91aa88f",
+    "requirements.txt": "bc8ef97bae7c12994fb5dce3b523fde466eba88a",
+    "environment.yml": "0496cd88981826350845bcb474e8f2c0ad4536cf",
+    "utils/nca.py": "2246636e39478cb5ac585681b4ca75456a04e849",
+    "utils/tokenizers.py": "73c35d852f03912932194d8ce9fe044f8d31812c",
+    "utils/models.py": "8464e0d581441ce9080126d58ff4ffc779dc2576",
+    "utils/util.py": "29d22ae086bde805c61bba9d7be307e33f4eb94e",
+    "utils/training_args.py": "6c702b6cdb36784ee043b70619ed1c1ae5c3f686",
+    "utils/dataset_utils.py": "96d98160780c08a61ecfc74774717a01bba75ebd",
+    "src/nca_ppt.py": "05b3e1df139f5523c1521dfcbe0a833bd8780ceb",
+    "src/openwebtext_pt.py": "ceafcd1565fbfb4711ecb1208bf9a7fc5f3f446a",
+    "src/language_train.py": "d86e6549e7124bd5eae2b9a1e93769d2dec7f477",
+    "src/datasets/preprocess.py": "f19f370fc9f0e0fa5045630ab07ec533e2a72533",
+    "scripts/prepretraining/nca_prepretraining.sh": "1f661fa4fb822681cb8112d473b6923a9e8eaa9a",
+    "scripts/pretraining/owt_ft.sh": "2ea7303912c99a94f31bab2d8a2e342c18ecde64"
+  },
+  "dependencies": {
+    "torch": "2.8.0",
+    "transformers": "4.53.0",
+    "jax": "0.6.2",
+    "jaxlib": "0.6.2",
+    "flax": "0.11.2",
+    "numpy": "2.2.6",
+    "einops": "0.8.1",
+    "tiktoken": "0.11.0",
+    "datasets": "3.6.0",
+    "peft": "0.15.2",
+    "wandb": "0.20.1",
+    "joblib": "1.5.1",
+    "matplotlib": "3.10.3"
+  }
+}

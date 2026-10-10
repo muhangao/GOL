@@ -1,0 +1,20 @@
+# Direct runtime pins taken from the authors' requirements.txt at bdd1c71.
+# Install torch==2.8.0 for the target CUDA/CPU backend separately, then this file.
+# Use a separate Python 3.11 environment; do not modify the existing GoL env.
+transformers==4.53.0
+tokenizers==0.21.2
+jax==0.6.2
+jaxlib==0.6.2
+flax==0.11.2
+numpy==2.2.6
+einops==0.8.1
+tiktoken==0.11.0
+datasets==3.6.0
+peft==0.15.2
+wandb==0.20.1
+joblib==1.5.1
+matplotlib==3.10.3
+optax==0.2.5
+orbax-checkpoint==0.11.24
+chex==0.1.90
+tqdm

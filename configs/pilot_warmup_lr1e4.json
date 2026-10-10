@@ -1,0 +1,38 @@
+{
+  "model": {
+    "layers": 12,
+    "dim": 768,
+    "heads": 12,
+    "ffn_dim": 2048,
+    "seq_len": 1024,
+    "rope_theta": 10000.0,
+    "tied_embeddings": true
+  },
+  "train": {
+    "global_batch_size": 128,
+    "micro_batch_size": 4,
+    "warmup_reference_steps": 128,
+    "text_steps": 2048,
+    "budget_match": "estimated_flops",
+    "lr": 0.0006,
+    "min_lr_ratio": 0.1,
+    "lr_warmup_steps": 20,
+    "weight_decay": 0.1,
+    "grad_clip": 1.0,
+    "dtype": "bfloat16",
+    "eval_every": 64,
+    "eval_sequences": 128,
+    "checkpoint_every": 128,
+    "data_seed": 1729
+  },
+  "life": {
+    "board_size": 12,
+    "frames": 6,
+    "density_min": 0.2,
+    "density_max": 0.6,
+    "boundary": "toroidal"
+  },
+  "warmup": {
+    "lr": 0.0001
+  }
+}
